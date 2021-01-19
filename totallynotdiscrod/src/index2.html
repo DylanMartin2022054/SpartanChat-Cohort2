@@ -1,0 +1,93 @@
+<!DOCTYPE html>
+<html lang="en" dir="ltr">
+
+<head>
+  <meta charset="utf-8">
+  <title>websocket</title>
+</head>
+
+<body>
+  <div id="outpoot" style="height: 400px; overflow: scroll;">
+  </div>
+  <textarea id="inpoot" rows=2 cols=32 autocomplete="off"></textarea>
+  <button id="sendButton" onclick="sendit()">Send</button>
+  <div id="userBox">
+  </div>
+</body>
+<script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
+<script type="text/javascript">
+  // Connects to websocket host
+  const ws = new WebSocket('ws://localhost:8080/');
+
+  // What do?
+  document.getElementById('inpoot').addEventListener("keyup", function(event) {
+    // check if the event key code is equal to 13
+    if (event.keyCode == 13) {
+      // if the event isn't handled don't do the default action
+      event.preventDefault();
+      // gets the element sendButton
+      document.getElementById('sendButton').click();
+    }
+  });
+
+  // when the websocket is opened, send "joined" message.
+  ws.onopen = function() {
+    console.log('Connected to server!');
+    // list that contains user data.
+    let connectMSG = {
+      name: "Crystal Tofu",
+      type: "connect",
+      date: new Date()
+    }
+    // stringify everything in the connectMSG object,
+    ws.send(JSON.stringify(connectMSG));
+  }
+
+// when a message is sent...
+  ws.onmessage = function(message) {
+    // parse message data
+    let data = JSON.parse(message.data);
+
+// check the data type
+    if (data.type == "message") {
+      // replace all data.X with the proper information
+      document.getElementById('outpoot').innerHTML +=
+        `<span style="color: ${data.color}" title="${data.date}">` +
+        `${data.name}</span>: ${data.message}<br>`;
+    }
+    // check data type
+    else if (data.type == "userlist") {
+      //define userbox as whatever data is in the id 'userbox'
+      let userBox = document.getElementById('userBox')
+      // find the innerHTML of userbox
+      userBox.innerHTML = '';
+      // for every name in the list....
+      data.names.forEach(function(name) {
+        // add them to a list
+        userBox.innerHTML += name + "<br>";
+      });
+    } else if (data.type == "connect") {
+      // when someone connects, send '*name* has joined the server'
+      document.getElementById('outpoot').innerHTML +=
+        `<i>${data.name} has joined the server.</i><br>`
+    }
+  }
+
+  //define the function sendit
+  function sendit() {
+    // define the object msgObj
+    let msgObj = {
+      name: "Crystal Tofu",
+      color: "#3333FF",
+      type: "message",
+      message: document.getElementById('inpoot').value,
+      date: new Date().toString()
+    };
+    // Stringify everything in the msgObj object.
+    ws.send(JSON.stringify(msgObj));
+    // get the value of inpoot
+    document.getElementById('inpoot').value = "";
+  }
+</script>
+
+</html>
